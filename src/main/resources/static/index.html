@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Gestion Bibliothèque</title>
+
+<style>
+body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 40px;
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    color: #333;
+}
+
+/* Title */
+h1{
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 32px;
+}
+
+/* Sections */
+h2{
+    color: #34495e;
+    margin-top: 20px;
+}
+
+/* FORM */
+input{
+    padding: 10px;
+    margin: 5px;
+    width: 180px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    transition: 0.3s;
+}
+
+input:focus{
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52,152,219,0.5);
+}
+
+/* BUTTONS */
+button{
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+/* Save button */
+button:nth-of-type(1){
+    background: #3498db;
+    color: white;
+}
+
+button:nth-of-type(1):hover{
+    background: #2980b9;
+}
+
+/* Reset button (if exists) */
+button:nth-of-type(2){
+    background: #95a5a6;
+    color: white;
+}
+
+button:nth-of-type(2):hover{
+    background: #7f8c8d;
+}
+
+/* TABLE */
+table{
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+th{
+    background: #2c3e50;
+    color: white;
+    padding: 12px;
+}
+
+td{
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+/* Hover row */
+tr:hover{
+    background: #f2f6fc;
+}
+
+/* ACTION BUTTONS */
+td button{
+    padding: 6px 10px;
+    margin: 2px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+/* Modifier */
+td button:first-child{
+    background: #f39c12;
+    color: white;
+}
+
+td button:first-child:hover{
+    background: #e67e22;
+}
+
+/* Supprimer */
+td button:last-child{
+    background: #e74c3c;
+    color: white;
+}
+
+td button:last-child:hover{
+    background: #c0392b;
+}
+
+/* Container effect */
+table, input, button{
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn{
+    from{opacity:0; transform: translateY(10px);}
+    to{opacity:1; transform: translateY(0);}
+}
+</style>
+
+</head>
+<body>
+
+<h1>Gestion des Livres Pour Auteur</h1>
+
+<h2>Formulaire</h2>
+
+<input type="hidden" id="id">
+
+<input type="text" id="titre" placeholder="Titre">
+<input type="text" id="auteur" placeholder="Auteur">
+<input type="number" id="prix" placeholder="Prix">
+
+<button onclick="saveLivre()">Enregistrer</button>
+
+<hr>
+
+<h2>Liste des Livres</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Titre</th>
+            <th>Auteur</th>
+            <th>Prix</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody id="tableLivres"></tbody>
+</table>
+
+<script>
+
+function chargerLivres(){
+    fetch('/livres')
+    .then(res => res.json())
+    .then(data => {
+        let table = document.getElementById("tableLivres");
+        table.innerHTML = "";
+
+        data.forEach(livre => {
+            table.innerHTML += `
+                <tr>
+                    <td>${livre.id}</td>
+                    <td>${livre.titre}</td>
+                    <td>${livre.auteur}</td>
+                    <td>${livre.prix}</td>
+                    <td>
+                        <button onclick="editLivre(${livre.id}, '${livre.titre}', '${livre.auteur}', ${livre.prix})">
+                            Modifier
+                        </button>
+                        <button onclick="deleteLivre(${livre.id})">
+                            Supprimer
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// ajouter ou modifier
+function saveLivre(){
+
+    let id = document.getElementById("id").value;
+
+    let livre = {
+        titre: document.getElementById("titre").value,
+        auteur: document.getElementById("auteur").value,
+        prix: parseFloat(document.getElementById("prix").value)
+    };
+
+    if(id === ""){
+
+        fetch('/livres', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(livre)
+        }).then(() => chargerLivres());
+
+    } else {
+
+        fetch('/livres/' + id, {
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(livre)
+        }).then(() => chargerLivres());
+    }
+
+    clearForm();
+}
+
+// remplir form
+function editLivre(id, titre, auteur, prix){
+    document.getElementById("id").value = id;
+    document.getElementById("titre").value = titre;
+    document.getElementById("auteur").value = auteur;
+    document.getElementById("prix").value = prix;
+}
+
+// delete
+function deleteLivre(id){
+    fetch('/livres/' + id, { method:'DELETE' })
+    .then(() => chargerLivres());
+}
+
+// reset form
+function clearForm(){
+    document.getElementById("id").value = "";
+    document.getElementById("titre").value = "";
+    document.getElementById("auteur").value = "";
+    document.getElementById("prix").value = "";
+}
+
+chargerLivres();
+
+</script>
+
+</body>
+</html>
